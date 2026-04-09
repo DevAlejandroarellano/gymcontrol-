@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Registro</title>
+</head>
+<body>
+
+<h1>Registrar usuario</h1>
+
+<form id="registerForm">
+  <input type="text" id="nombre" placeholder="Nombre" required>
+  <br><br>
+  <input type="email" id="email" placeholder="Correo" required>
+  <br><br>
+  <input type="password" id="password" placeholder="Contraseña" required>
+  <br><br>
+  <button type="submit">Registrar</button>
+</form>
+
+<p id="mensaje"></p>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const nombre = document.getElementById('nombre').value;
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const mensaje = document.getElementById('mensaje');
+
+  try {
+    const res = await fetch('/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ nombre, email, password })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      mensaje.textContent = data.error || 'Error al registrar';
+      return;
+    }
+
+    mensaje.textContent = 'Usuario registrado correctamente ✅';
+
+    // Opcional: redirigir a login
+    setTimeout(() => {
+      window.location.href = '/login.html';
+    }, 1000);
+
+  } catch (error) {
+    console.error(error);
+    mensaje.textContent = 'Error de conexión';
+  }
+});
+</script>
+
+</body>
+</html>

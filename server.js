@@ -122,8 +122,94 @@ app.put('/membresias/:id', requireAuth, (req, res) => {
 });
 
 // America agrega sus rutas aquí:
-// app.get('/miembros', requireAuth, ...)
-// app.post('/miembros', requireAuth, ...)
+app.get('/miembros', requireAuth, (req, res) => {
+  const sql = `
+    SELECT id, nombre, telefono, email, fecha_registro
+    FROM miembros
+    ORDER BY id DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error al obtener miembros:', err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    res.json(results);
+  });
+});
+
+app.post('/miembros', requireAuth, (req, res) => {
+  const { nombre, telefono, email, fecha_registro } = req.body;
+
+  if (!nombre) {
+    return res.status(400).json({ error: 'El nombre es obligatorio' });
+  }
+
+  const sql = `
+    INSERT INTO miembros (nombre, telefono, email, fecha_registro)
+    VALUES (?, ?, ?, ?)
+  `;
+
+  db.query(sql, [nombre, telefono, email, fecha_registro], (err, result) => {
+    if (err) {
+      console.error('Error al crear miembro:', err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    res.json({
+      mensaje: 'Miembro creado ✅',
+      id: result.insertId
+    });
+  });
+});
+
+app.put('/miembros/:id', requireAuth, (req, res) => {
+  const { id } = req.params;
+  const { nombre, telefono, email, fecha_registro } = req.body;
+
+  if (!nombre) {
+    return res.status(400).json({ error: 'El nombre es obligatorio' });
+  }
+
+  const sql = `
+    UPDATE miembros
+    SET nombre = ?, telefono = ?, email = ?, fecha_registro = ?
+    WHERE id = ?
+  `;
+
+  db.query(sql, [nombre, telefono, email, fecha_registro, id], (err, result) => {
+    if (err) {
+      console.error('Error al actualizar miembro:', err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Miembro no encontrado' });
+    }
+
+    res.json({ mensaje: 'Miembro actualizado ✅' });
+  });
+});
+
+app.delete('/miembros/:id', requireAuth, (req, res) => {
+  const { id } = req.params;
+
+  const sql = 'DELETE FROM miembros WHERE id = ?';
+
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error('Error al eliminar miembro:', err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Miembro no encontrado' });
+    }
+
+    res.json({ mensaje: 'Miembro eliminado ✅' });
+  });
+});
 
 // Jorge agrega sus rutas aquí:
 // app.get('/pagos', requireAuth, ...)

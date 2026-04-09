@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Miembros</title>
+</head>
+<body>
+
+<h1>Miembros</h1>
+
+<form id="formMiembro">
+  <input type="text" id="nombre" placeholder="Nombre" required>
+  <input type="text" id="telefono" placeholder="Teléfono">
+  <input type="email" id="email" placeholder="Email">
+  <input type="date" id="fecha">
+  <button type="submit">Agregar</button>
+</form>
+
+<br>
+
+<table border="1">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Nombre</th>
+      <th>Teléfono</th>
+      <th>Email</th>
+      <th>Fecha</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody id="tabla"></tbody>
+</table>
+
+<script>
+let editandoId = null;
+
+async function cargarMiembros() {
+  const res = await fetch('/miembros', {
+    credentials: 'include'
+  });
+
+  if (res.status === 401) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  const data = await res.json();
+  const tabla = document.getElementById('tabla');
+  tabla.innerHTML = '';
+
+  data.forEach(m => {
+    tabla.innerHTML += `
+      <tr>
+        <td>${m.id}</td>
+        <td>${m.nombre}</td>
+        <td>${m.telefono || ''}</td>
+        <td>${m.email || ''}</td>
+        <td>${m.fecha_registro || ''}</td>
+        <td>
+          <button onclick="editar(${m.id}, '${m.nombre}', '${m.telefono}', '${m.email}', '${m.fecha_registro}')">Editar</button>
+          <button onclick="eliminar(${m.id})">Eliminar</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+document.getElementById('formMiembro').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const data = {
+    nombre: nombre.value,
+    telefono: telefono.value,
+    email: email.value,
+    fecha_registro: fecha.value
+  };
+
+  if (editandoId) {
+    await fetch(`/miembros/${editandoId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data)
+    });
+    editandoId = null;
+  } else {
+    await fetch('/miembros', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data)
+    });
+  }
+
+  formMiembro.reset();
+  cargarMiembros();
+});
+
+function editar(id, nombre, telefono, email, fecha) {
+  document.getElementById('nombre').value = nombre;
+  document.getElementById('telefono').value = telefono;
+  document.getElementById('email').value = email;
+  document.getElementById('fecha').value = fecha;
+
+  editandoId = id;
+}
+
+async function eliminar(id) {
+  if (!confirm('¿Eliminar este miembro?')) return;
+
+  await fetch(`/miembros/${id}`, {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+
+  cargarMiembros();
+}
+
+cargarMiembros();
+</script>
+
+</body>
+</html>
