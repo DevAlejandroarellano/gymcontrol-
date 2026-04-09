@@ -2,58 +2,127 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GymControl — Acceso</title>
+  <link rel="stylesheet" href="login.css">
 </head>
+
+
 <body>
 
-<h1>Iniciar sesión</h1>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
 
-<form id="loginForm">
-  <input type="email" id="email" placeholder="Correo" required>
-  <br><br>
-  <input type="password" id="password" placeholder="Contraseña" required>
-  <br><br>
-  <button type="submit">Entrar</button>
-</form>
+  <div class="split">
 
-<p id="mensaje"></p>
+    <!-- Panel izquierdo -->
+    <div class="panel-left">
 
-<script>
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
+      <div class="logo">
+        <div class="logo-icon">💪</div>
+        <span class="logo-name">GymControl</span>
+      </div>
 
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  const mensaje = document.getElementById('mensaje');
+      <div class="hero-text">
+        <h1>
+          Sin
+          <span class="outline">Límites</span>
+          <span class="sub-outline">Sin excusas</span>
+        </h1>
+        <p>Administra tu gimnasio con precisión. Miembros, membresías y pagos en un solo lugar.</p>
+      </div>
 
-  try {
-    const res = await fetch('/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include',
-      body: JSON.stringify({ email, password })
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="num">24<span>/7</span></div>
+          <div class="label">Disponible</div>
+        </div>
+        <div class="stat-item">
+          <div class="num">100<span>%</span></div>
+          <div class="label">Control</div>
+        </div>
+        <div class="stat-item">
+          <div class="num">3</div>
+          <div class="label">Módulos</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Panel derecho -->
+    <div class="panel-right">
+
+      <div class="form-tag">Acceso al sistema</div>
+
+      <div class="form-heading">
+        Entra<br>
+        <span>al panel</span>
+      </div>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="email">Correo electrónico</label>
+          <input type="email" id="email" placeholder="usuario@correo.com" required>
+        </div>
+
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn-login" id="btn">Entrar al sistema →</button>
+      </form>
+
+      <p id="mensaje"></p>
+
+      <div class="form-footer">GymControl · Sistema de gestión · 2025</div>
+    </div>
+
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email    = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const mensaje  = document.getElementById('mensaje');
+      const btn      = document.getElementById('btn');
+
+      btn.disabled = true;
+      btn.textContent = 'Verificando...';
+      mensaje.textContent = '';
+      mensaje.className = '';
+
+      try {
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          mensaje.textContent = data.error || 'Credenciales incorrectas';
+          btn.disabled = false;
+          btn.textContent = 'Entrar al sistema →';
+          return;
+        }
+
+        mensaje.textContent = 'Acceso concedido — redirigiendo…';
+        mensaje.className = 'ok';
+        setTimeout(() => { window.location.href = '/index.html'; }, 900);
+
+      } catch (err) {
+        console.error(err);
+        mensaje.textContent = 'Error de conexión';
+        btn.disabled = false;
+        btn.textContent = 'Entrar al sistema →';
+      }
     });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      mensaje.textContent = data.error || 'Error al iniciar sesión';
-      return;
-    }
-
-    mensaje.textContent = 'Login correcto ✅';
-
-    // REDIRIGE A MIEMBROS
-    window.location.href = '/miembros.html';
-
-  } catch (error) {
-    console.error(error);
-    mensaje.textContent = 'Error de conexión';
-  }
-});
-</script>
+  </script>
 
 </body>
 </html>

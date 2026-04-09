@@ -2,9 +2,160 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>GymControl</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — GymControl</title>
+  <link rel="stylesheet" href="index.css">
 </head>
+
 <body>
-  <h1>GymControl</h1>
+
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Nav -->
+  <nav>
+    <a href="index.html" class="brand">GymControl</a>
+    <a href="index.html" class="active">Dashboard</a>
+    <a href="miembros.html">Miembros</a>
+    <a href="membresias.html">Membresías</a>
+    <a href="pagos.html">Pagos</a>
+    <a href="#" id="btnLogout">Cerrar sesión</a>
+  </nav>
+
+  <main>
+
+    <!-- Header -->
+    <div class="page-header">
+      <div class="section-tag">Panel de control</div>
+      <h1>
+        Panel<br>
+        <span class="outline">General</span>
+      </h1>
+      <p>Resumen general del gimnasio en tiempo real</p>
+    </div>
+
+    <div class="content">
+
+      <!-- Stats KPI -->
+      <div>
+        <div class="section-label">Métricas clave</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total de miembros</div>
+            <div class="stat-value" id="totalMiembros">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Membresías activas</div>
+            <div class="stat-value" id="membresiasActivas">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Recaudado este mes</div>
+            <div class="stat-value gold" id="totalMes">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nav Cards -->
+      <div>
+        <div class="section-label">Módulos</div>
+        <div class="nav-grid">
+          <a href="miembros.html" class="card">
+            <span class="card-icon">🧑‍🤝‍🧑</span>
+            <h2>Miembros</h2>
+            <p>Registra y administra los miembros del gimnasio</p>
+            <span class="card-arrow">→</span>
+          </a>
+          <a href="membresias.html" class="card">
+            <span class="card-icon">🏷️</span>
+            <h2>Membresías</h2>
+            <p>Asigna planes Fit o Black a los miembros</p>
+            <span class="card-arrow">→</span>
+          </a>
+          <a href="pagos.html" class="card">
+            <span class="card-icon">💳</span>
+            <h2>Pagos</h2>
+            <p>Registra pagos en efectivo, tarjeta o transferencia</p>
+            <span class="card-arrow">→</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarDashboard();
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      await fetch('/logout', { credentials: 'include' });
+      window.location.href = 'login.html';
+    });
+
+    async function cargarDashboard() {
+      const res = await fetch('/dashboard', { credentials: 'include' });
+      if (res.status === 401) { window.location.href = 'login.html'; return; }
+
+      const data = await res.json();
+
+      animateValue('totalMiembros', data.totalMiembros ?? 0);
+      animateValue('membresiasActivas', data.membresiasActivas ?? 0);
+
+      const total = parseFloat(data.totalMes ?? 0);
+      document.getElementById('totalMes').textContent =
+        '$' + total.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' MXN';
+    }
+
+    /* Animación de conteo para los números */
+    function animateValue(id, target) {
+      const el = document.getElementById(id);
+      const duration = 900;
+      const start = performance.now();
+      const from = 0;
+
+      function update(now) {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.round(from + (target - from) * ease);
+        if (progress < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    }
+  </script>
+
 </body>
+<!--
+  ═══════════════════════════════════════════════════════════
+  GYMCONTROL — Footer reutilizable
+  Copia este bloque justo antes de </body> en cada página.
+  Cambia "soporte@tudominio.com" por tu correo real.
+  ═══════════════════════════════════════════════════════════
+-->
+
+<footer>
+
+  <!-- Izquierda: marca y versión -->
+  <div class="footer-brand">
+    <span class="footer-logo">GymControl</span>
+    <span class="footer-version">v1.0.0</span>
+  </div>
+
+  <!-- Centro: estado del sistema -->
+  <div class="footer-status">
+    <span class="status-dot"></span>
+    Sistema operativo
+  </div>
+
+  <!-- Derecha: copyright y soporte -->
+  <div class="footer-meta">
+    <span class="footer-copy">© 2025 GymControl · Todos los derechos reservados</span>
+    <span class="footer-support">
+      Soporte: <a href="mailto:soporte@tudominio.com">soporte@tudominio.com</a>
+    </span>
+  </div>
+
+</footer>
 </html>

@@ -2,123 +2,366 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Miembros</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Miembros — GymControl</title>
+  <link rel="stylesheet" href="miembros.css">
 </head>
+
 <body>
 
-<h1>Miembros</h1>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
 
-<form id="formMiembro">
-  <input type="text" id="nombre" placeholder="Nombre" required>
-  <input type="text" id="telefono" placeholder="Teléfono">
-  <input type="email" id="email" placeholder="Email">
-  <input type="date" id="fecha">
-  <button type="submit">Agregar</button>
-</form>
+  <!-- Nav -->
+  <nav>
+    <a href="index.html" class="brand">GymControl</a>
+    <a href="index.html">Dashboard</a>
+    <a href="miembros.html" class="active">Miembros</a>
+    <a href="membresias.html">Membresías</a>
+    <a href="pagos.html">Pagos</a>
+    <a href="#" id="btnLogout">Cerrar sesión</a>
+  </nav>
 
-<br>
+  <main>
 
-<table border="1">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Nombre</th>
-      <th>Teléfono</th>
-      <th>Email</th>
-      <th>Fecha</th>
-      <th>Acciones</th>
-    </tr>
-  </thead>
-  <tbody id="tabla"></tbody>
-</table>
+    <!-- Header -->
+    <div class="page-header">
+      <div class="section-tag">Gestión de personas</div>
+      <h1>
+        Mis<br>
+        <span class="outline">Miembros</span>
+      </h1>
+      <p>Registra, edita y administra los miembros del gimnasio</p>
+    </div>
 
-<script>
-let editandoId = null;
+    <div class="content">
 
-async function cargarMiembros() {
-  const res = await fetch('/miembros', {
-    credentials: 'include'
-  });
+      <!-- Formulario -->
+      <div>
+        <div class="section-label" id="formLabel">Agregar miembro</div>
+        <div class="form-panel" id="formPanel">
+          <div class="form-panel-inner">
 
-  if (res.status === 401) {
-    window.location.href = 'login.html';
-    return;
-  }
+            <div class="edit-banner" id="editBanner">
+              Editando miembro — <span id="editNombreTag"></span>
+              <button onclick="cancelarEdicion()">Cancelar</button>
+            </div>
 
-  const data = await res.json();
-  const tabla = document.getElementById('tabla');
-  tabla.innerHTML = '';
+            <div id="alertaMiembro" class="alert"></div>
 
-  data.forEach(m => {
-    tabla.innerHTML += `
-      <tr>
-        <td>${m.id}</td>
-        <td>${m.nombre}</td>
-        <td>${m.telefono || ''}</td>
-        <td>${m.email || ''}</td>
-        <td>${m.fecha_registro || ''}</td>
-        <td>
-          <button onclick="editar(${m.id}, '${m.nombre}', '${m.telefono}', '${m.email}', '${m.fecha_registro}')">Editar</button>
-          <button onclick="eliminar(${m.id})">Eliminar</button>
-        </td>
-      </tr>
-    `;
-  });
-}
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="nombre">Nombre completo</label>
+                <input type="text" id="nombre" placeholder="Juan García" required>
+              </div>
+              <div class="form-group">
+                <label for="telefono">Teléfono</label>
+                <input type="text" id="telefono" placeholder="618 000 0000">
+              </div>
+              <div class="form-group">
+                <label for="email">Correo electrónico</label>
+                <input type="email" id="email" placeholder="juan@correo.com">
+              </div>
+              <div class="form-group">
+                <label for="fecha">Fecha de registro</label>
+                <input type="date" id="fecha">
+              </div>
+            </div>
 
-document.getElementById('formMiembro').addEventListener('submit', async e => {
-  e.preventDefault();
+            <div class="btn-row">
+              <button class="btn-primary" id="btnSubmit" onclick="enviarFormulario()">
+                Agregar miembro →
+              </button>
+              <button class="btn-cancel" id="btnCancel" onclick="cancelarEdicion()">
+                Cancelar
+              </button>
+            </div>
 
-  const data = {
-    nombre: nombre.value,
-    telefono: telefono.value,
-    email: email.value,
-    fecha_registro: fecha.value
-  };
+          </div>
+        </div>
+      </div>
 
-  if (editandoId) {
-    await fetch(`/miembros/${editandoId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(data)
+      <!-- Tabla -->
+      <div>
+        <div class="section-label">Directorio</div>
+        <div class="table-panel">
+          <div class="table-header">
+            <div class="table-title">Miembros registrados</div>
+            <div class="table-count" id="tableCount">—</div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Miembro</th>
+                  <th>Teléfono</th>
+                  <th>Email</th>
+                  <th>Registro</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla">
+                <tr><td colspan="6" class="loading">Cargando miembros...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal de confirmación de eliminación -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h3>Eliminar miembro</h3>
+      <p>¿Estás seguro de que deseas eliminar a <strong id="modalNombre"></strong>? Esta acción no se puede deshacer.</p>
+      <div class="modal-btns">
+        <button class="modal-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button class="modal-confirm" id="modalConfirm">Eliminar →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let editandoId   = null;
+    let eliminandoId = null;
+
+    /* ── Inicialización ───────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+      cargarMiembros();
     });
-    editandoId = null;
-  } else {
-    await fetch('/miembros', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(data)
+
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      await fetch('/logout', { credentials: 'include' });
+      window.location.href = 'login.html';
     });
-  }
 
-  formMiembro.reset();
-  cargarMiembros();
-});
+    /* ── Alerta ───────────────────────────────────────────── */
+    function mostrarAlerta(mensaje, tipo) {
+      const alerta = document.getElementById('alertaMiembro');
+      alerta.textContent = mensaje;
+      alerta.className = `alert alert-${tipo} show`;
+      setTimeout(() => alerta.className = 'alert', 3500);
+    }
 
-function editar(id, nombre, telefono, email, fecha) {
-  document.getElementById('nombre').value = nombre;
-  document.getElementById('telefono').value = telefono;
-  document.getElementById('email').value = email;
-  document.getElementById('fecha').value = fecha;
+    /* ── Cargar tabla ─────────────────────────────────────── */
+    async function cargarMiembros() {
+      const res = await fetch('/miembros', { credentials: 'include' });
+      if (res.status === 401) { window.location.href = 'login.html'; return; }
 
-  editandoId = id;
-}
+      const data  = await res.json();
+      const tabla = document.getElementById('tabla');
+      const count = document.getElementById('tableCount');
 
-async function eliminar(id) {
-  if (!confirm('¿Eliminar este miembro?')) return;
+      count.textContent = `${data.length} miembro${data.length !== 1 ? 's' : ''}`;
 
-  await fetch(`/miembros/${id}`, {
-    method: 'DELETE',
-    credentials: 'include'
-  });
+      if (!data.length) {
+        tabla.innerHTML = '<tr><td colspan="6" class="loading">No hay miembros registrados</td></tr>';
+        return;
+      }
 
-  cargarMiembros();
-}
+      tabla.innerHTML = data.map(m => `
+        <tr id="row-${m.id}">
+          <td>${m.id}</td>
+          <td>
+            <div class="member-cell">
+              <div class="avatar">${m.nombre.charAt(0).toUpperCase()}</div>
+              ${m.nombre}
+            </div>
+          </td>
+          <td>${m.telefono || '—'}</td>
+          <td>${m.email || '—'}</td>
+          <td>${m.fecha_registro ? m.fecha_registro.split('T')[0] : '—'}</td>
+          <td>
+            <div class="action-btns">
+              <button class="btn-edit"
+                onclick="editar(${m.id}, '${esc(m.nombre)}', '${esc(m.telefono)}', '${esc(m.email)}', '${m.fecha_registro ? m.fecha_registro.split('T')[0] : ''}')">
+                Editar
+              </button>
+              <button class="btn-delete"
+                onclick="confirmarEliminar(${m.id}, '${esc(m.nombre)}')">
+                Eliminar
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
 
-cargarMiembros();
-</script>
+    /* Escapa comillas simples para atributos onclick inline */
+    function esc(str) {
+      return (str || '').replace(/'/g, "\\'");
+    }
+
+    /* ── Enviar formulario (crear o editar) ───────────────── */
+    async function enviarFormulario() {
+      const data = {
+        nombre:          document.getElementById('nombre').value.trim(),
+        telefono:        document.getElementById('telefono').value.trim(),
+        email:           document.getElementById('email').value.trim(),
+        fecha_registro:  document.getElementById('fecha').value
+      };
+
+      if (!data.nombre) {
+        mostrarAlerta('El nombre es obligatorio.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = true;
+      btn.textContent = editandoId ? 'Guardando...' : 'Agregando...';
+
+      const url    = editandoId ? `/miembros/${editandoId}` : '/miembros';
+      const method = editandoId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+
+      if (res.status === 401) { window.location.href = 'login.html'; return; }
+
+      btn.disabled = false;
+
+      if (res.ok) {
+        mostrarAlerta(
+          editandoId ? 'Miembro actualizado correctamente.' : 'Miembro agregado correctamente.',
+          'success'
+        );
+        cancelarEdicion();
+        cargarMiembros();
+      } else {
+        const err = await res.json();
+        mostrarAlerta(err.error || 'Error al guardar.', 'error');
+        btn.textContent = editandoId ? 'Guardar cambios →' : 'Agregar miembro →';
+      }
+    }
+
+    /* ── Editar ───────────────────────────────────────────── */
+    function editar(id, nombre, telefono, email, fecha) {
+      editandoId = id;
+
+      document.getElementById('nombre').value   = nombre;
+      document.getElementById('telefono').value = telefono;
+      document.getElementById('email').value    = email;
+      document.getElementById('fecha').value    = fecha;
+
+      /* UI: modo edición */
+      document.getElementById('formPanel').classList.add('editing');
+      document.getElementById('editBanner').classList.add('show');
+      document.getElementById('editNombreTag').textContent = nombre;
+      document.getElementById('formLabel').textContent = 'Editar miembro';
+
+      const btn = document.getElementById('btnSubmit');
+      btn.textContent = 'Guardar cambios →';
+      btn.classList.add('save-mode');
+
+      document.getElementById('btnCancel').classList.add('show');
+
+      /* Resalta fila */
+      document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('row-editing'));
+      const row = document.getElementById(`row-${id}`);
+      if (row) row.classList.add('row-editing');
+
+      /* Scroll al formulario */
+      document.getElementById('formPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    /* ── Cancelar edición ─────────────────────────────────── */
+    function cancelarEdicion() {
+      editandoId = null;
+
+      document.getElementById('nombre').value   = '';
+      document.getElementById('telefono').value = '';
+      document.getElementById('email').value    = '';
+      document.getElementById('fecha').value    = new Date().toISOString().split('T')[0];
+
+      document.getElementById('formPanel').classList.remove('editing');
+      document.getElementById('editBanner').classList.remove('show');
+      document.getElementById('formLabel').textContent = 'Agregar miembro';
+
+      const btn = document.getElementById('btnSubmit');
+      btn.textContent = 'Agregar miembro →';
+      btn.classList.remove('save-mode');
+
+      document.getElementById('btnCancel').classList.remove('show');
+      document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('row-editing'));
+    }
+
+    /* ── Modal eliminar ───────────────────────────────────── */
+    function confirmarEliminar(id, nombre) {
+      eliminandoId = id;
+      document.getElementById('modalNombre').textContent = nombre;
+      document.getElementById('modalOverlay').classList.add('show');
+    }
+
+    function cerrarModal() {
+      eliminandoId = null;
+      document.getElementById('modalOverlay').classList.remove('show');
+    }
+
+    document.getElementById('modalConfirm').addEventListener('click', async () => {
+      if (!eliminandoId) return;
+
+      const res = await fetch(`/miembros/${eliminandoId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      cerrarModal();
+
+      if (res.ok) {
+        mostrarAlerta('Miembro eliminado.', 'success');
+        cargarMiembros();
+      } else {
+        mostrarAlerta('Error al eliminar.', 'error');
+      }
+    });
+
+    /* Cerrar modal al hacer clic fuera */
+    document.getElementById('modalOverlay').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) cerrarModal();
+    });
+  </script>
 
 </body>
+
+<!--
+  ═══════════════════════════════════════════════════════════
+  GYMCONTROL — Footer reutilizable
+  Copia este bloque justo antes de </body> en cada página.
+  Cambia "soporte@tudominio.com" por tu correo real.
+  ═══════════════════════════════════════════════════════════
+-->
+
+<footer>
+
+  <!-- Izquierda: marca y versión -->
+  <div class="footer-brand">
+    <span class="footer-logo">GymControl</span>
+    <span class="footer-version">v1.0.0</span>
+  </div>
+
+  <!-- Centro: estado del sistema -->
+  <div class="footer-status">
+    <span class="status-dot"></span>
+    Sistema operativo
+  </div>
+
+  <!-- Derecha: copyright y soporte -->
+  <div class="footer-meta">
+    <span class="footer-copy">© 2025 GymControl · Todos los derechos reservados</span>
+    <span class="footer-support">
+      Soporte: <a href="mailto:soporte@tudominio.com">soporte@tudominio.com</a>
+    </span>
+  </div>
+
+</footer>
+
 </html>

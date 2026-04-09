@@ -4,147 +4,244 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Membresías — GymControl</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="membresias.css">
 </head>
+
+
 <body>
 
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Nav -->
   <nav>
-    <span>GymControl</span>
+    <a href="index.html" class="brand">GymControl</a>
     <a href="index.html">Dashboard</a>
     <a href="miembros.html">Miembros</a>
-    <a href="membresias.html">Membresías</a>
+    <a href="membresias.html" class="active">Membresías</a>
     <a href="pagos.html">Pagos</a>
     <a href="#" id="btnLogout">Cerrar sesión</a>
   </nav>
 
   <main>
-    <h1>Membresías</h1>
 
-    <!-- FORMULARIO PARA ASIGNAR PLAN -->
-    <section class="card">
-      <h2>Asignar Plan a Miembro</h2>
+    <!-- Header -->
+    <div class="page-header">
+      <div class="section-tag">Gestión de planes</div>
+      <h1>
+        Mem<span class="outline">bresías</span>
+      </h1>
+      <p>Asigna planes Fit o Black y consulta el estado de cada membresía</p>
+    </div>
 
-      <div class="form-group">
-        <label>Miembro</label>
-        <select id="selectMiembro">
-          <option value="">Cargando miembros...</option>
-        </select>
+    <div class="content">
+
+      <!-- Formulario asignar plan -->
+      <div>
+        <div class="section-label">Asignar plan</div>
+        <div class="form-panel">
+          <div class="form-panel-inner">
+
+            <div id="alertaMembresia" class="alert"></div>
+
+            <!-- Selector de plan visual -->
+            <div class="plan-selector" id="planSelector">
+
+              <label class="plan-card fit selected" id="cardFit">
+                <input type="radio" name="plan" class="plan-radio" value="1" checked>
+                <div class="plan-check">✓</div>
+                <div class="plan-card-inner">
+                  <div class="plan-info">
+                    <div class="plan-name">Fit</div>
+                    <div class="plan-desc">Acceso general · mensual</div>
+                  </div>
+                  <div class="plan-price">
+                    $300
+                    <span>MXN / mes</span>
+                  </div>
+                </div>
+              </label>
+
+              <label class="plan-card black" id="cardBlack">
+                <input type="radio" name="plan" class="plan-radio" value="2">
+                <div class="plan-check">✓</div>
+                <div class="plan-card-inner">
+                  <div class="plan-info">
+                    <div class="plan-name">Black</div>
+                    <div class="plan-desc">Acceso premium · mensual</div>
+                  </div>
+                  <div class="plan-price">
+                    $500
+                    <span>MXN / mes</span>
+                  </div>
+                </div>
+              </label>
+
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="selectMiembro">Miembro</label>
+                <select id="selectMiembro">
+                  <option value="">Cargando miembros...</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="fechaInicio">Fecha de inicio</label>
+                <input type="date" id="fechaInicio">
+              </div>
+            </div>
+
+            <button class="btn-primary" id="btnAsignar" onclick="asignarMembresia()">
+              Asignar plan →
+            </button>
+
+          </div>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label>Plan</label>
-        <select id="selectPlan">
-          <option value="1">Fit — $300 MXN / mes</option>
-          <option value="2">Black — $500 MXN / mes</option>
-        </select>
+      <!-- Tabla de membresías -->
+      <div>
+        <div class="section-label">Historial de planes</div>
+        <div class="table-panel">
+          <div class="table-header">
+            <div class="table-title">Membresías registradas</div>
+            <div class="table-count" id="tableCount">—</div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Miembro</th>
+                  <th>Plan</th>
+                  <th>Precio</th>
+                  <th>Inicio</th>
+                  <th>Vencimiento</th>
+                  <th>Estado</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tablaMembresias">
+                <tr><td colspan="7" class="loading">Cargando membresías...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label>Fecha de inicio</label>
-        <input type="date" id="fechaInicio">
-      </div>
-
-      <button onclick="asignarMembresia()">Asignar Plan</button>
-      <p id="mensajeAsignar"></p>
-    </section>
-
-    <!-- TABLA DE MEMBRESÍAS -->
-    <section class="card">
-      <h2>Membresías Registradas</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Miembro</th>
-            <th>Plan</th>
-            <th>Precio</th>
-            <th>Inicio</th>
-            <th>Vencimiento</th>
-            <th>Estado</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody id="tablaMembresias">
-          <tr><td colspan="7">Cargando...</td></tr>
-        </tbody>
-      </table>
-    </section>
+    </div>
   </main>
 
   <script>
-    // ── Formatear fecha ──────────────────────────────────────
-    function formatearFecha(fechaISO) {
-      return fechaISO.split('T')[0];
-    }
+    /* ── Selección visual de plan ───────────────────────── */
+    const cards = document.querySelectorAll('.plan-card');
 
-    // ── Al cargar la página ──────────────────────────────────
-    document.addEventListener('DOMContentLoaded', () => {
-      cargarMembresias();
-      cargarMiembrosEnSelect();
-
-      const hoy = new Date().toISOString().split('T')[0];
-      document.getElementById('fechaInicio').value = hoy;
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        cards.forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        card.querySelector('.plan-radio').checked = true;
+      });
     });
 
-    // ── Logout ───────────────────────────────────────────────
+    /* ── Init ───────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('fechaInicio').value = new Date().toISOString().split('T')[0];
+      cargarMembresias();
+      cargarMiembrosEnSelect();
+    });
+
     document.getElementById('btnLogout').addEventListener('click', async () => {
       await fetch('/logout', { credentials: 'include' });
       window.location.href = 'login.html';
     });
 
-    // ── Cargar membresías en la tabla ────────────────────────
+    /* ── Alerta ─────────────────────────────────────────── */
+    function mostrarAlerta(mensaje, tipo) {
+      const alerta = document.getElementById('alertaMembresia');
+      alerta.textContent = mensaje;
+      alerta.className = `alert alert-${tipo} show`;
+      setTimeout(() => alerta.className = 'alert', 3500);
+    }
+
+    /* ── Cargar tabla ───────────────────────────────────── */
     async function cargarMembresias() {
       const res = await fetch('/membresias', { credentials: 'include' });
-      // if (res.status === 401) { window.location.href = 'login.html'; return; }
+      if (res.status === 401) { window.location.href = 'login.html'; return; }
 
       const datos = await res.json();
       const tbody = document.getElementById('tablaMembresias');
+      const count = document.getElementById('tableCount');
 
-      if (datos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7">No hay membresías registradas</td></tr>';
+      count.textContent = `${datos.length} registro${datos.length !== 1 ? 's' : ''}`;
+
+      if (!datos.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="loading">No hay membresías registradas</td></tr>';
         return;
       }
 
-      tbody.innerHTML = datos.map(m => `
-        <tr>
-          <td>${m.miembro}</td>
-          <td>${m.plan}</td>
-          <td>$${m.precio} MXN</td>
-          <td>${formatearFecha(m.fecha_inicio)}</td>
-          <td>${formatearFecha(m.fecha_fin)}</td>
-          <td>
-            <span class="estado ${m.estado}">${m.estado}</span>
-          </td>
-          <td>
-            <button onclick="cambiarEstado(${m.id}, 'vencida')">Vencer</button>
-          </td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = datos.map(m => {
+        const planSlug  = m.plan?.toLowerCase().includes('black') ? 'black' : 'fit';
+        const estaActiva = m.estado === 'activa';
+
+        return `
+          <tr>
+            <td>${m.miembro}</td>
+            <td><span class="badge-plan ${planSlug}">${m.plan}</span></td>
+            <td class="precio">$${parseFloat(m.precio).toFixed(2)}</td>
+            <td>${formatFecha(m.fecha_inicio)}</td>
+            <td>${formatFecha(m.fecha_fin)}</td>
+            <td><span class="badge-estado ${m.estado}">${m.estado}</span></td>
+            <td>
+              <button
+                class="btn-vencer"
+                onclick="cambiarEstado(${m.id}, 'vencida')"
+                ${!estaActiva ? 'disabled' : ''}>
+                Vencer
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
-    // ── Cargar miembros en el select ─────────────────────────
+    function formatFecha(iso) {
+      return iso ? iso.split('T')[0] : '—';
+    }
+
+    /* ── Cargar select de miembros ──────────────────────── */
     async function cargarMiembrosEnSelect() {
       const res = await fetch('/miembros', { credentials: 'include' });
-      // if (res.status === 401) { window.location.href = 'login.html'; return; }
+      if (!res.ok) return;
 
-      if (!res.ok) return; // si /miembros no existe todavía, no hace nada
       const miembros = await res.json();
-      const select = document.getElementById('selectMiembro');
+      const select   = document.getElementById('selectMiembro');
+
+      if (!miembros.length) {
+        select.innerHTML = '<option value="">No hay miembros registrados</option>';
+        return;
+      }
+
       select.innerHTML = miembros.map(m =>
         `<option value="${m.id}">${m.nombre}</option>`
       ).join('');
     }
 
-    // ── Asignar plan ─────────────────────────────────────────
+    /* ── Asignar plan ───────────────────────────────────── */
     async function asignarMembresia() {
-      const miembro_id = document.getElementById('selectMiembro').value;
-      const plan_id = document.getElementById('selectPlan').value;
+      const miembro_id  = document.getElementById('selectMiembro').value;
+      const plan_id     = document.querySelector('.plan-radio:checked')?.value;
       const fecha_inicio = document.getElementById('fechaInicio').value;
-      const msg = document.getElementById('mensajeAsignar');
 
       if (!miembro_id || !fecha_inicio) {
-        msg.textContent = 'Selecciona un miembro y una fecha.';
+        mostrarAlerta('Selecciona un miembro y una fecha de inicio.', 'error');
         return;
       }
+
+      const btn = document.getElementById('btnAsignar');
+      btn.disabled = true;
+      btn.textContent = 'Asignando...';
 
       const res = await fetch('/membresias', {
         method: 'POST',
@@ -153,22 +250,68 @@
         body: JSON.stringify({ miembro_id, plan_id, fecha_inicio })
       });
 
+      if (res.status === 401) { window.location.href = 'login.html'; return; }
+
       const data = await res.json();
-      msg.textContent = data.mensaje || data.error;
-      if (res.ok) cargarMembresias();
+      btn.disabled = false;
+      btn.textContent = 'Asignar plan →';
+
+      if (res.ok) {
+        mostrarAlerta(data.mensaje || 'Plan asignado correctamente.', 'success');
+        cargarMembresias();
+      } else {
+        mostrarAlerta(data.error || 'Error al asignar el plan.', 'error');
+      }
     }
 
-    // ── Cambiar estado ───────────────────────────────────────
+    /* ── Cambiar estado ─────────────────────────────────── */
     async function cambiarEstado(id, nuevoEstado) {
-      await fetch(`/membresias/${id}`, {
+      const res = await fetch(`/membresias/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ estado: nuevoEstado })
       });
-      cargarMembresias();
+
+      if (res.ok) {
+        mostrarAlerta('Estado actualizado.', 'success');
+        cargarMembresias();
+      } else {
+        mostrarAlerta('Error al actualizar el estado.', 'error');
+      }
     }
   </script>
 
 </body>
+<!--
+  ═══════════════════════════════════════════════════════════
+  GYMCONTROL — Footer reutilizable
+  Copia este bloque justo antes de </body> en cada página.
+  Cambia "soporte@tudominio.com" por tu correo real.
+  ═══════════════════════════════════════════════════════════
+-->
+
+<footer>
+
+  <!-- Izquierda: marca y versión -->
+  <div class="footer-brand">
+    <span class="footer-logo">GymControl</span>
+    <span class="footer-version">v1.0.0</span>
+  </div>
+
+  <!-- Centro: estado del sistema -->
+  <div class="footer-status">
+    <span class="status-dot"></span>
+    Sistema operativo
+  </div>
+
+  <!-- Derecha: copyright y soporte -->
+  <div class="footer-meta">
+    <span class="footer-copy">© 2025 GymControl · Todos los derechos reservados</span>
+    <span class="footer-support">
+      Soporte: <a href="mailto:soporte@tudominio.com">soporte@tudominio.com</a>
+    </span>
+  </div>
+
+</footer>
 </html>

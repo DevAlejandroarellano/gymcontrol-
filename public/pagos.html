@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagos — GymControl</title>
+  <link rel="stylesheet" href="pagos.css">
+</head>
+
+<body>
+
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Nav -->
+  <nav>
+    <a href="index.html" class="brand">GymControl</a>
+    <a href="index.html">Dashboard</a>
+    <a href="miembros.html">Miembros</a>
+    <a href="membresias.html">Membresías</a>
+    <a href="pagos.html" class="active">Pagos</a>
+    <a href="#" id="btnLogout">Cerrar sesión</a>
+  </nav>
+
+  <main>
+
+    <!-- Header -->
+    <div class="page-header">
+      <div class="section-tag">Módulo financiero</div>
+      <h1>
+        Pagos<br>
+        <span class="outline">& Cobros</span>
+      </h1>
+      <p>Registra y consulta los pagos de membresías</p>
+    </div>
+
+    <div class="content">
+
+      <!-- Formulario -->
+      <div>
+        <div class="section-label">Registrar pago</div>
+        <div class="form-panel">
+          <div class="form-panel-inner">
+
+            <div id="alertaPago" class="alert"></div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="selectMembresia">Membresía</label>
+                <select id="selectMembresia">
+                  <option value="">Cargando membresías...</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="inputMonto">Monto (MXN)</label>
+                <input type="number" id="inputMonto" placeholder="Ej: 500" min="0" step="0.01">
+              </div>
+
+              <div class="form-group">
+                <label for="inputFecha">Fecha de pago</label>
+                <input type="date" id="inputFecha">
+              </div>
+
+              <div class="form-group">
+                <label for="selectMetodo">Método de pago</label>
+                <select id="selectMetodo">
+                  <option value="efectivo">Efectivo</option>
+                  <option value="tarjeta">Tarjeta</option>
+                  <option value="transferencia">Transferencia</option>
+                </select>
+              </div>
+            </div>
+
+            <button class="btn-primary" onclick="registrarPago()">Registrar pago →</button>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div>
+        <div class="section-label">Historial</div>
+        <div class="table-panel">
+          <div class="table-header">
+            <div class="table-title">Pagos registrados</div>
+            <div class="table-count" id="tableCount">—</div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Membresía</th>
+                  <th>Miembro</th>
+                  <th>Plan</th>
+                  <th>Monto</th>
+                  <th>Fecha</th>
+                  <th>Método</th>
+                </tr>
+              </thead>
+              <tbody id="tablaPagos">
+                <tr><td colspan="7" class="loading">Cargando pagos...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    function formatearFecha(fechaISO) {
+      return fechaISO ? fechaISO.split('T')[0] : '—';
+    }
+
+    function mostrarAlerta(mensaje, tipo) {
+      const alerta = document.getElementById('alertaPago');
+      alerta.textContent = mensaje;
+      alerta.className = `alert alert-${tipo} show`;
+      setTimeout(() => alerta.className = 'alert', 3500);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('inputFecha').value = new Date().toISOString().split('T')[0];
+      cargarPagos();
+      cargarMembresiasEnSelect();
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      await fetch('/logout', { credentials: 'include' });
+      window.location.href = 'login.html';
+    });
+
+    async function cargarPagos() {
+      const res = await fetch('/pagos', { credentials: 'include' });
+      if (res.status === 401) { window.location.href = 'login.html'; return; }
+
+      const datos = await res.json();
+      const tbody = document.getElementById('tablaPagos');
+      const count = document.getElementById('tableCount');
+
+      if (!datos.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="loading">No hay pagos registrados</td></tr>';
+        count.textContent = '0 registros';
+        return;
+      }
+
+      count.textContent = `${datos.length} registro${datos.length !== 1 ? 's' : ''}`;
+
+      tbody.innerHTML = datos.map(p => `
+        <tr>
+          <td>${p.id}</td>
+          <td>${p.membresia_id}</td>
+          <td>${p.miembro || '—'}</td>
+          <td>${p.plan || '—'}</td>
+          <td class="monto">$${parseFloat(p.monto).toFixed(2)}</td>
+          <td>${formatearFecha(p.fecha_pago)}</td>
+          <td><span class="metodo metodo-${p.metodo}">${p.metodo}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    async function cargarMembresiasEnSelect() {
+      const res = await fetch('/membresias', { credentials: 'include' });
+      if (!res.ok) return;
+
+      const datos = await res.json();
+      const select = document.getElementById('selectMembresia');
+      const activas = datos.filter(m => m.estado === 'activa');
+      const lista = activas.length ? activas : datos;
+
+      if (!lista.length) {
+        select.innerHTML = '<option value="">No hay membresías disponibles</option>';
+        return;
+      }
+
+      select.innerHTML = lista.map(m =>
+        `<option value="${m.id}">${m.miembro} — ${m.plan}</option>`
+      ).join('');
+
+      actualizarMonto();
+      select.addEventListener('change', actualizarMonto);
+    }
+
+    function actualizarMonto() {
+      const select = document.getElementById('selectMembresia');
+      const texto  = select.options[select.selectedIndex]?.text.toLowerCase() || '';
+      const input  = document.getElementById('inputMonto');
+      if (texto.includes('black'))    input.value = 500;
+      else if (texto.includes('fit')) input.value = 300;
+    }
+
+    async function registrarPago() {
+      const membresia_id = document.getElementById('selectMembresia').value;
+      const monto        = document.getElementById('inputMonto').value;
+      const fecha_pago   = document.getElementById('inputFecha').value;
+      const metodo       = document.getElementById('selectMetodo').value;
+
+      if (!membresia_id || !monto || !fecha_pago) {
+        mostrarAlerta('Completa todos los campos antes de continuar.', 'error');
+        return;
+      }
+
+      const btn = document.querySelector('.btn-primary');
+      btn.disabled = true;
+      btn.textContent = 'Procesando...';
+
+      const res = await fetch('/pagos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ membresia_id, monto, fecha_pago, metodo })
+      });
+
+      if (res.status === 401) { window.location.href = 'login.html'; return; }
+
+      const data = await res.json();
+      btn.disabled = false;
+      btn.textContent = 'Registrar pago →';
+
+      if (res.ok) {
+        mostrarAlerta(data.mensaje || 'Pago registrado correctamente.', 'success');
+        cargarPagos();
+      } else {
+        mostrarAlerta(data.error || 'Error al registrar el pago.', 'error');
+      }
+    }
+  </script>
+
+</body>
+
+<!--
+  ═══════════════════════════════════════════════════════════
+  GYMCONTROL — Footer reutilizable
+  Copia este bloque justo antes de </body> en cada página.
+  Cambia "soporte@tudominio.com" por tu correo real.
+  ═══════════════════════════════════════════════════════════
+-->
+
+<footer>
+
+  <!-- Izquierda: marca y versión -->
+  <div class="footer-brand">
+    <span class="footer-logo">GymControl</span>
+    <span class="footer-version">v1.0.0</span>
+  </div>
+
+  <!-- Centro: estado del sistema -->
+  <div class="footer-status">
+    <span class="status-dot"></span>
+    Sistema operativo
+  </div>
+
+  <!-- Derecha: copyright y soporte -->
+  <div class="footer-meta">
+    <span class="footer-copy">© 2025 GymControl · Todos los derechos reservados</span>
+    <span class="footer-support">
+      Soporte: <a href="mailto:soporte@tudominio.com">soporte@tudominio.com</a>
+    </span>
+  </div>
+
+</footer>
+</html>
