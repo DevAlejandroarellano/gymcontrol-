@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Membresías — GymControl</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <nav>
+    <span>GymControl</span>
+    <a href="index.html">Dashboard</a>
+    <a href="miembros.html">Miembros</a>
+    <a href="membresias.html">Membresías</a>
+    <a href="pagos.html">Pagos</a>
+    <a href="#" id="btnLogout">Cerrar sesión</a>
+  </nav>
+
+  <main>
+    <h1>Membresías</h1>
+
+    <!-- FORMULARIO PARA ASIGNAR PLAN -->
+    <section class="card">
+      <h2>Asignar Plan a Miembro</h2>
+
+      <div class="form-group">
+        <label>Miembro</label>
+        <select id="selectMiembro">
+          <option value="">Cargando miembros...</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Plan</label>
+        <select id="selectPlan">
+          <option value="1">Fit — $300 MXN / mes</option>
+          <option value="2">Black — $500 MXN / mes</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Fecha de inicio</label>
+        <input type="date" id="fechaInicio">
+      </div>
+
+      <button onclick="asignarMembresia()">Asignar Plan</button>
+      <p id="mensajeAsignar"></p>
+    </section>
+
+    <!-- TABLA DE MEMBRESÍAS -->
+    <section class="card">
+      <h2>Membresías Registradas</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Miembro</th>
+            <th>Plan</th>
+            <th>Precio</th>
+            <th>Inicio</th>
+            <th>Vencimiento</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tablaMembresias">
+          <tr><td colspan="7">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    // ── Formatear fecha ──────────────────────────────────────
+    function formatearFecha(fechaISO) {
+      return fechaISO.split('T')[0];
+    }
+
+    // ── Al cargar la página ──────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarMembresias();
+      cargarMiembrosEnSelect();
+
+      const hoy = new Date().toISOString().split('T')[0];
+      document.getElementById('fechaInicio').value = hoy;
+    });
+
+    // ── Logout ───────────────────────────────────────────────
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      await fetch('/logout', { credentials: 'include' });
+      window.location.href = 'login.html';
+    });
+
+    // ── Cargar membresías en la tabla ────────────────────────
+    async function cargarMembresias() {
+      const res = await fetch('/membresias', { credentials: 'include' });
+      // if (res.status === 401) { window.location.href = 'login.html'; return; }
+
+      const datos = await res.json();
+      const tbody = document.getElementById('tablaMembresias');
+
+      if (datos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7">No hay membresías registradas</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = datos.map(m => `
+        <tr>
+          <td>${m.miembro}</td>
+          <td>${m.plan}</td>
+          <td>$${m.precio} MXN</td>
+          <td>${formatearFecha(m.fecha_inicio)}</td>
+          <td>${formatearFecha(m.fecha_fin)}</td>
+          <td>
+            <span class="estado ${m.estado}">${m.estado}</span>
+          </td>
+          <td>
+            <button onclick="cambiarEstado(${m.id}, 'vencida')">Vencer</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ── Cargar miembros en el select ─────────────────────────
+    async function cargarMiembrosEnSelect() {
+      const res = await fetch('/miembros', { credentials: 'include' });
+      // if (res.status === 401) { window.location.href = 'login.html'; return; }
+
+      if (!res.ok) return; // si /miembros no existe todavía, no hace nada
+      const miembros = await res.json();
+      const select = document.getElementById('selectMiembro');
+      select.innerHTML = miembros.map(m =>
+        `<option value="${m.id}">${m.nombre}</option>`
+      ).join('');
+    }
+
+    // ── Asignar plan ─────────────────────────────────────────
+    async function asignarMembresia() {
+      const miembro_id = document.getElementById('selectMiembro').value;
+      const plan_id = document.getElementById('selectPlan').value;
+      const fecha_inicio = document.getElementById('fechaInicio').value;
+      const msg = document.getElementById('mensajeAsignar');
+
+      if (!miembro_id || !fecha_inicio) {
+        msg.textContent = 'Selecciona un miembro y una fecha.';
+        return;
+      }
+
+      const res = await fetch('/membresias', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ miembro_id, plan_id, fecha_inicio })
+      });
+
+      const data = await res.json();
+      msg.textContent = data.mensaje || data.error;
+      if (res.ok) cargarMembresias();
+    }
+
+    // ── Cambiar estado ───────────────────────────────────────
+    async function cambiarEstado(id, nuevoEstado) {
+      await fetch(`/membresias/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ estado: nuevoEstado })
+      });
+      cargarMembresias();
+    }
+  </script>
+
+</body>
+</html>
