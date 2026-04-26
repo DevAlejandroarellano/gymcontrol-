@@ -59,3 +59,7 @@ CREATE TABLE pagos (
 INSERT INTO planes (nombre, precio, duracion_dias) VALUES
 ('Fit', 300.00, 30),
 ('Black', 500.00, 30);
+
+-- Usuario administrador por defecto
+INSERT INTO usuarios (nombre, email, password) VALUES
+('Admin', 'admin@gymcontrol.com', '$2b$10$DRRj40qWxqpPdrB0/HZEWuQLI1YV/52Wsg4ztkzKroOfNIvA/EEGW');
